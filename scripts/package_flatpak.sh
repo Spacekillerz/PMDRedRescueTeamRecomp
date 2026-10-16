@@ -68,7 +68,10 @@ find . -mindepth 1 \
     -o \( -iname '*.gba' -o -iname '*.agb' -o -name '*.sav' -o -name gba_bios.bin \
           -o -name 'recompiled_*.cpp' -o -name 'bios_recompiled.*' -o -name bios_symbol_map.cpp \
           -o -name 'recomp_coverage_*.json' -o -name 'recomp_master_misses_*.toml.frag' \) -print \
-    | sed 's|^\./||' | LC_ALL=C sort -u > "$SKIP_FILE"
+    | sed 's|^\./||' > "$SKIP_FILE"
+# Only tracked files ship: anything local to this checkout stays out.
+git -C "$ROOT" ls-files --others --directory | sed 's|/$||' >> "$SKIP_FILE"
+LC_ALL=C sort -u "$SKIP_FILE" -o "$SKIP_FILE"
 
 while IFS= read -r path; do
     printf "        - '%s'\n" "${path//\'/\'\'}" >> "$SKIP_YAML"
