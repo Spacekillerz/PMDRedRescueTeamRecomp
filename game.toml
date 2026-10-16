@@ -54,3 +54,43 @@ view_width = 240
 resize_view = false
 sharp_filter = true
 widescreen = false
+
+# --- Code copied from ROM into RAM at runtime --------------------------------
+
+# InitIntrTable (src/reg_control.c) copies IntrMain (src/crt0.s, 0x120 bytes)
+# into IntrMain_Buffer and points INTR_VECTOR at the copy.
+[[code_copy]]
+runtime_start = 0x0202D4B8
+source_start = 0x08000104
+size = 0x120
+name = "IntrMain"
+
+[[extra_func]]
+addr = 0x0202D4B8
+mode = "arm"
+name = "IntrMain"
+note = "IRQ entry, reached through INTR_VECTOR"
+
+# IntrMain calls the C handler with lr = IntrMain_RetAddr (+0xAC), so the
+# handler's return lands inside IntrMain.
+[[extra_func]]
+addr = 0x0202D564
+mode = "arm"
+resume = true
+name = "IntrMain_RetAddr"
+note = "return point inside IntrMain"
+
+# m4aSoundInit (src/m4a.c) copies SoundMainRAM (src/m4a_1.s, 0x400 bytes) into
+# SoundMainRAM_Buffer, the first IWRAM variable. SoundMain enters it through
+# the literal lt_SoundMainRAM_Buffer (0x03000001) at 0x080AE2E8.
+[[code_copy]]
+runtime_start = 0x03000000
+source_start = 0x080AE2F8
+size = 0x400
+name = "SoundMainRAM"
+
+[[extra_func]]
+addr = 0x03000000
+mode = "thumb"
+name = "SoundMainRAM"
+note = "m4a PCM mixer, called every frame"
