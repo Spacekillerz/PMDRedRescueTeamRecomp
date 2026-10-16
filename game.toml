@@ -1,0 +1,56 @@
+# Pokemon Mystery Dungeon: Red Rescue Team (USA, Australia) — gbarecomp config.
+# Schema: gbarecomp/docs/TOML_SCHEMA.md
+#
+# Seeds ([[extra_func]], [[code_copy]], [[jump_table]], [[data_range]]) are
+# added by hand after reviewing the runtime's miss proposals
+# (recomp_master_misses_B24E.toml.frag). Never merge them automatically.
+
+[game]
+name = "Pokemon Mystery Dungeon: Red Rescue Team"
+short_name = "pmd_red_rescue_team"
+
+[program]
+name = "Pokemon Mystery Dungeon: Red Rescue Team (USA, Australia)"
+id = "B24E"
+load_address = 0x08000000
+size = 0x02000000
+entry_pc = 0x08000000
+speculative_literal_harvest = true
+aot_scan_start = 0x08000000
+aot_scan_end = 0x0A000000
+static_resume_all = true
+
+[identity]
+sha1 = "9f4cfc5b5f4859d17169a485462e977c7aac2b89"
+md5 = "2100cf6f17e12cd34f1513647dfa506b"
+
+[recompiler]
+entry_point = "0x08000000"
+out_dir = "generated"
+strict = true
+
+[bios]
+path = "bios/gba_bios.bin"
+sha1 = "300c20df6731a33952ded8c436f7f186d25d3492"
+hle = false
+skip_intro = true
+
+[rom]
+path = "roms/pmd_red.gba"
+sha1 = "9f4cfc5b5f4859d17169a485462e977c7aac2b89"
+
+[save]
+type = "flash1m"
+size = 131072
+path = "saves/pmd_red_rescue_team.sav"
+
+[runtime]
+debug_port = 19895
+window_title = "Pokemon Mystery Dungeon: Red Rescue Team"
+
+[video]
+screen = "raw"
+view_width = 240
+resize_view = false
+sharp_filter = true
+widescreen = false

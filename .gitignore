@@ -1,0 +1,23 @@
+# Copyrighted inputs and everything derived from them: never commit.
+/roms/*
+!/roms/README.md
+/bios/*
+!/bios/README.md
+/generated/
+/generated_bios/
+/saves/
+*.gba
+*.bin
+*.sav
+*.state*
+
+# Build outputs, runtime reports and the self-heal native cache
+/recomp_cache/
+/build*/
+/release-stage/
+/cmake-build-*/
+/.idea/
+recomp_coverage_*.json
+recomp_master_misses_*.toml.frag
+recomp_seed_proposals.toml
+*.log

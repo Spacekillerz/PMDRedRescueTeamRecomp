@@ -1,0 +1,19 @@
+diff --git a/src/runtime/host_window.cpp b/src/runtime/host_window.cpp
+index 712c1bb..06ad854 100644
+--- a/src/runtime/host_window.cpp
++++ b/src/runtime/host_window.cpp
+@@ -2881,6 +2881,14 @@ HostWindow::Events HostWindow::pump() {
+             g.kind = GestureKind::Back;
+             g.t_ms = touch_clock_ms();
+             TouchHub::instance().submit_gesture(g);
++        } else if (e.type == SDL_CONTROLLERBUTTONDOWN) {
++            // Stick clicks have no GBA equivalent, so they carry the two
++            // system toggles a player wants without reaching the keyboard.
++            switch (e.cbutton.button) {
++                case SDL_CONTROLLER_BUTTON_LEFTSTICK:  ev.toggle_pause = true;      break;
++                case SDL_CONTROLLER_BUTTON_RIGHTSTICK: ev.toggle_fullscreen = true; break;
++                default: break;
++            }
+         } else if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
+             // Edge-triggered hotkeys (ignore key-repeat). F1..F9 are
+             // save-state slots: plain = load, Shift = save. SDL's F1..F12
