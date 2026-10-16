@@ -5,4 +5,4 @@ source "$(dirname "$0")/common.sh"
 
 cd "$ROOT"
 mkdir -p saves
-exec "$GAME_BUILD/PmdRedRecomp" --bios "$BIOS" --rom "$ROM" "$@" game.toml
+exec "$GAME_BUILD/PMDRedRescueTeamRecomp" --bios "$BIOS" --rom "$ROM" "$@" game.toml

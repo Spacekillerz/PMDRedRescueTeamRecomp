@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(PmdRedRecomp C CXX)
+project(PMDRedRescueTeamRecomp C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
@@ -24,7 +24,7 @@ if(NOT GAME_GENERATED_SOURCES)
     message(WARNING "generated/ is empty: run scripts/regen.sh before building the game")
 endif()
 
-set(GAME_TARGET PmdRedRecomp)
+set(GAME_TARGET PMDRedRescueTeamRecomp)
 add_executable(${GAME_TARGET} src/main.cpp ${GAME_GENERATED_SOURCES})
 
 # The recompiled shards are huge machine-written translation units: -O1 keeps

@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0) {
             std::printf(
-                "PmdRedRecomp --bios <gba_bios.bin> --rom <pmd_red.gba> [options] [game.toml]\n\n"
+                "PMDRedRescueTeamRecomp --bios <gba_bios.bin> --rom <pmd_red.gba> [options] [game.toml]\n\n"
                 "  --no-launcher   skip the launcher once\n"
                 "  --fullscreen    start in fullscreen\n"
                 "  --no-window     headless run (with --frames N)\n");

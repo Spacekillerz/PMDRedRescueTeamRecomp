@@ -4,4 +4,4 @@
 source "$(dirname "$0")/common.sh"
 
 cmake -S "$ROOT" -B "$GAME_BUILD" -G "$GENERATOR" -DCMAKE_BUILD_TYPE=Release "$@"
-cmake --build "$GAME_BUILD" --target PmdRedRecomp -j"$(nproc)"
+cmake --build "$GAME_BUILD" --target PMDRedRescueTeamRecomp -j"$(nproc)"

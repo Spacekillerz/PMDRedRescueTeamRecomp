@@ -1,4 +1,4 @@
-# PMD Red Recomp
+# PMDRedRescueTeamRecomp
 
 Native static recompilation of *Pokemon Mystery Dungeon: Red Rescue Team*
 (GBA, USA/Australia, `B24E`) built on [gbarecomp].

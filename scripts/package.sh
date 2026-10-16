@@ -4,8 +4,8 @@
 # The ROM and BIOS are never included.
 source "$(dirname "$0")/common.sh"
 
-NAME="PmdRedRecomp"
-"$GBARECOMP/packaging/package_linux.sh" --root "$ROOT" --target PmdRedRecomp --name "$NAME" \
+NAME="PMDRedRescueTeamRecomp"
+"$GBARECOMP/packaging/package_linux.sh" --root "$ROOT" --target PMDRedRescueTeamRecomp --name "$NAME" \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 STAGE="$ROOT/release-stage"
@@ -29,7 +29,7 @@ cat > "$OUT/play.sh" <<'SH'
 #!/usr/bin/env bash
 cd "$(dirname "$0")"
 export LD_LIBRARY_PATH="$PWD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-exec ./PmdRedRecomp --bios bios/gba_bios.bin --rom roms/pmd_red.gba "$@" game.toml
+exec ./PMDRedRescueTeamRecomp --bios bios/gba_bios.bin --rom roms/pmd_red.gba "$@" game.toml
 SH
 chmod +x "$OUT/play.sh"
 
