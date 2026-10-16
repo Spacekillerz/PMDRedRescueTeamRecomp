@@ -101,7 +101,9 @@ fi
 BUILD_DIR="$OUT/build"
 REPO="$OUT/repo"
 rm -rf "$BUILD_DIR" "$REPO"
-"${BUILDER[@]}" --user --install-deps-from=flathub --force-clean --state-dir="$ROOT/.flatpak-builder" \
+# CI runs as root in a container whose SDK is installed system-wide.
+FLATPAK_SCOPE="${FLATPAK_SCOPE:---user}"
+"${BUILDER[@]}" "$FLATPAK_SCOPE" --install-deps-from=flathub --force-clean --state-dir="$ROOT/.flatpak-builder" \
     --repo="$REPO" "$BUILD_DIR" "$MANIFEST"
 
 PAYLOAD="$BUILD_DIR/files/bin/sources"

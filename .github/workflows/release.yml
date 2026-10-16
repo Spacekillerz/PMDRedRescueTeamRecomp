@@ -1,0 +1,61 @@
+name: Release
+
+# A v* tag publishes a GitHub release; a manual run only uploads the bundle as
+# a workflow artifact, to test packaging without releasing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flatpak:
+    name: Flatpak bundle
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      # flatpak-builder needs to create its own namespaces.
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Apply gbarecomp patches
+        run: |
+          git config --global --add safe.directory '*'
+          scripts/apply_patches.sh
+
+      - name: Build the bundle
+        env:
+          FLATPAK_SCOPE: --system
+        run: |
+          flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          scripts/package_flatpak.sh
+
+      - name: Name and checksum
+        id: dist
+        run: |
+          version="${GITHUB_REF_NAME}"
+          [ "${GITHUB_REF_TYPE}" = tag ] || version="dev-${GITHUB_SHA::7}"
+          name="PMDRedRescueTeamRecomp-linux-x86_64-${version}.flatpak"
+          mkdir -p dist
+          cp flatpak-build/PMDRedRescueTeamRecomp.flatpak "dist/${name}"
+          (cd dist && sha256sum "${name}" > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: dist/
+
+      - uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            dist/*.flatpak
+            dist/SHA256SUMS.txt
+          body_path: packaging/RELEASE_NOTES.md
+          prerelease: ${{ contains(github.ref_name, '-') }}

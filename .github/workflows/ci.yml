@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  builder:
+    name: Builder (no ROM)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ libsdl2-dev libgl-dev libfreetype-dev libharfbuzz-dev
+
+      - name: Apply gbarecomp patches
+        run: scripts/apply_patches.sh
+
+      # BUILDER_ONLY is the property releases depend on: everything published
+      # configures and links without any ROM present.
+      - name: Configure (builder only)
+        run: cmake -S . -B build-builder -G Ninja -DCMAKE_BUILD_TYPE=Release -DGBAGAME_BUILDER_ONLY=ON
+
+      - name: Build
+        run: cmake --build build-builder --target PMDRedRescueTeamBuilder test_builder_core gba_recompile
+
+      - name: Unit tests
+        run: build-builder/test_builder_core
+
+      - name: Generate the Flatpak manifest
+        run: scripts/package_flatpak.sh --generate-only
