@@ -1,0 +1,71 @@
+# Flatpak manifest for the ROM-free builder. scripts/package_flatpak.sh fills
+# the @PLACEHOLDERS@ and the skip list; do not edit the generated copy.
+#
+# The runtime is the full SDK, not a platform: the builder compiles the game on
+# the player's machine, and a Steam Deck's immutable root cannot host gcc,
+# CMake or Ninja any other way.
+
+id: '@APP_ID@'
+runtime: org.freedesktop.Sdk
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: PMDRedRescueTeamBuilder
+
+finish-args:
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=ipc
+  # Controllers, including the Deck's own.
+  - --device=all
+  # Read-only: the ROM and BIOS are found and read in place, never written.
+  # Everything the app writes goes to its own ~/.var/app/<id>/data.
+  - --filesystem=home:ro
+  - --filesystem=/run/media:ro
+
+# The SDK ships SDL2 with its CMake config, which both the builder and the
+# player's build of the game link against.
+modules:
+  - name: builder
+    buildsystem: cmake-ninja
+    builddir: true
+    no-make-install: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      # The gate that keeps this artifact ROM-free and publishable.
+      - -DGBAGAME_BUILDER_ONLY=ON
+      - -DGBAGAME_RECOMP_UI=ON
+    sources:
+      - type: dir
+        path: '@SOURCE_DIR@'
+@SKIP@
+      # gbarecomp fetches toml++ at configure time; neither the Flatpak build nor
+      # the player's sandboxed build has network, so ship the pinned header.
+      - type: file
+        url: https://raw.githubusercontent.com/marzer/tomlplusplus/30172438cee64926dc41fdd9c11fb3ba5b2ba9de/toml.hpp
+        sha256: 6b5172ad4dd6519aec67b919181fa7a38a2234131e5b2afa232dfe444819783e
+        dest: gbarecomp/third_party/tomlpp
+      - type: file
+        path: '@SUPPORT_DIR@/@APP_ID@.desktop'
+      - type: file
+        path: '@SUPPORT_DIR@/@APP_ID@.png'
+      - type: file
+        path: '@SUPPORT_DIR@/@APP_ID@.metainfo.xml'
+    post-install:
+      - install -Dm755 PMDRedRescueTeamBuilder /app/bin/PMDRedRescueTeamBuilder
+      # The builder resolves sources/ beside its executable and copies them to a
+      # writable place before building.
+      - |
+        mkdir -p /app/bin/sources
+        tar -C .. --exclude='./_flatpak_build' -cf - . | tar -C /app/bin/sources -xf -
+      # gbarecomp is added EXCLUDE_FROM_ALL, so the recompiler needs an explicit
+      # target. Shipping it prebuilt saves the player compiling the compiler.
+      - cmake --build . --target gba_recompile
+      - |
+        recompiler="$(find . -type f -name gba_recompile -perm -u+x -print -quit)"
+        test -n "$recompiler" || { echo "gba_recompile was built but not found" >&2; exit 1; }
+        install -Dm755 "$recompiler" /app/bin/sources/bin/gba_recompile
+      - install -Dm644 '../@APP_ID@.desktop' '/app/share/applications/@APP_ID@.desktop'
+      - install -Dm644 '../@APP_ID@.png' '/app/share/icons/hicolor/256x256/apps/@APP_ID@.png'
+      - install -Dm644 '../@APP_ID@.metainfo.xml' '/app/share/metainfo/@APP_ID@.metainfo.xml'
+      - install -Dm644 ../LICENSE '/app/share/licenses/@APP_ID@/LICENSE'

@@ -18,6 +18,8 @@ ROM-derived code is stored in this repository.
 | `src/main.cpp`        | Host entry point, runtime options                    |
 | `scripts/`            | bootstrap, regen, build, run, package, verify-inputs |
 | `patches/`            | Local gbarecomp patches, applied by bootstrap        |
+| `tools/builder/`      | First-run builder app (the released artifact)        |
+| `packaging/`          | Flatpak manifest template and app icon               |
 | `config/config.ini`   | Default hotkeys, seeded next to the executable       |
 | `roms/`, `bios/`      | Your own dumps (git-ignored)                         |
 | `generated/`          | Recompiled C++ (git-ignored, always regenerated)     |
@@ -40,6 +42,38 @@ scripts/package.sh         # portable folder + tarball in release-stage/
 
 The package embeds code translated from your ROM: it is for your own use and
 must never be shared or published.
+
+## Builder and Flatpak (what gets released)
+
+A recompiled binary is translated ROM code, so it is never distributed. The
+release is `PMDRedRescueTeamBuilder` instead: it contains no game data, finds the
+player's ROM and BIOS, verifies their SHA-1, recompiles and compiles the game
+once (a few minutes), then launches it directly on every later start.
+
+- ROM and BIOS are found automatically in EmuDeck's layout (`~/Emulation/roms/gba`,
+  `~/Emulation/bios`, also on an SD card), `~/Downloads` and the home folder, so a
+  Steam Deck in Gaming Mode only needs the A button.
+- The Flatpak's runtime is the Freedesktop SDK, which brings gcc, CMake and Ninja
+  to an immutable Steam Deck root.
+- Everything the app writes (build, saves, states) stays in
+  `~/.var/app/io.github.roblittiere.PMDRedRescueTeamRecomp/`; the player's files are
+  mounted read-only.
+
+```sh
+cmake -S . -B build-builder -G Ninja -DGBAGAME_BUILDER_ONLY=ON   # proves it needs no ROM
+cmake --build build-builder && build-builder/test_builder_core
+build-builder/PMDRedRescueTeamBuilder --help
+scripts/package_flatpak.sh   # flatpak-build/PMDRedRescueTeamRecomp.flatpak
+```
+
+Install on a Steam Deck (Desktop Mode), then add it to Steam as a non-Steam game:
+
+```sh
+flatpak install --user ./PMDRedRescueTeamRecomp.flatpak
+```
+
+The builder is adapted from [BoktaiRecomp](https://github.com/Shy/BoktaiRecomp)'s,
+Copyright (c) 2026 Shy, under the PolyForm Noncommercial License 1.0.0.
 
 ### Controls
 

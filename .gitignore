@@ -21,3 +21,5 @@ recomp_coverage_*.json
 recomp_master_misses_*.toml.frag
 recomp_seed_proposals.toml
 *.log
+/flatpak-build/
+/.flatpak-builder/
