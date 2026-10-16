@@ -31,7 +31,9 @@ jobs:
       - name: Build the bundle
         env:
           FLATPAK_SCOPE: --system
+          FLATPAK_BUILDER_EXTRA: --disable-rofiles-fuse
         run: |
+          dbus-uuidgen --ensure=/etc/machine-id
           flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           scripts/package_flatpak.sh
 

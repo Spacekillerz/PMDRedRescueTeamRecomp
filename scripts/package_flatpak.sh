@@ -101,9 +101,11 @@ fi
 BUILD_DIR="$OUT/build"
 REPO="$OUT/repo"
 rm -rf "$BUILD_DIR" "$REPO"
-# CI runs as root in a container whose SDK is installed system-wide.
+# CI runs as root in a container whose SDK is installed system-wide, and
+# passes --disable-rofiles-fuse there because containers have no FUSE.
 FLATPAK_SCOPE="${FLATPAK_SCOPE:---user}"
-"${BUILDER[@]}" "$FLATPAK_SCOPE" --install-deps-from=flathub --force-clean --state-dir="$ROOT/.flatpak-builder" \
+read -ra EXTRA <<< "${FLATPAK_BUILDER_EXTRA:-}"
+"${BUILDER[@]}" "$FLATPAK_SCOPE" "${EXTRA[@]}" --install-deps-from=flathub --force-clean --state-dir="$ROOT/.flatpak-builder" \
     --repo="$REPO" "$BUILD_DIR" "$MANIFEST"
 
 PAYLOAD="$BUILD_DIR/files/bin/sources"
