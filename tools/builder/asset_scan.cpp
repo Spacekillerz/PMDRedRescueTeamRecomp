@@ -26,6 +26,27 @@ void add_if_dir(std::vector<std::string>& out, const fs::path& p) {
 
 std::vector<std::string> default_search_roots() {
     std::vector<std::string> roots;
+#if defined(_WIN32)
+    const char* home_env = std::getenv("USERPROFILE");
+    const fs::path home = (home_env && home_env[0]) ? fs::path(home_env) : fs::path();
+    // EmuDeck for Windows puts Emulation\ at the root of the drive it is given.
+    if (!home.empty()) {
+        add_if_dir(roots, home / "Emulation" / "roms" / "gba");
+        add_if_dir(roots, home / "Emulation" / "bios");
+    }
+    for (char d = 'C'; d <= 'Z'; ++d) {
+        const fs::path drive = std::string(1, d) + ":\\";
+        add_if_dir(roots, drive / "Emulation" / "roms" / "gba");
+        add_if_dir(roots, drive / "Emulation" / "bios");
+    }
+    if (!home.empty()) {
+        add_if_dir(roots, home / "Downloads");
+        add_if_dir(roots, home / "Documents");
+        add_if_dir(roots, home / "Desktop");
+        add_if_dir(roots, home);
+    }
+    return roots;
+#else
     const char* home_env = std::getenv("HOME");
     const fs::path home = (home_env && home_env[0]) ? fs::path(home_env) : fs::path();
 
@@ -50,6 +71,7 @@ std::vector<std::string> default_search_roots() {
     }
     add_if_dir(roots, "/run/media");
     return roots;
+#endif
 }
 
 void scan_for_assets(const std::vector<std::string>& roots, Assets& found) {

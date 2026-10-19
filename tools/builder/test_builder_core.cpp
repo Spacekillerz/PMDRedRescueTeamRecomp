@@ -104,17 +104,21 @@ int main() {
 
     std::printf("\ngame_args - absolute paths, config last\n");
     {
+        const fs::path base = fs::absolute(tmp);
         Paths p;
-        p.src_root = "/app/bin/sources";
-        p.data_root = "/home/deck/.var/app/x/data/PMDRedRescueTeamRecomp";
-        const auto args = game_args(p, {"/roms/pmd.gba", "/bios/gba_bios.bin"}, {"--fullscreen"});
+        p.src_root = (base / "sources").string();
+        p.data_root = (base / "data").string();
+        const auto args = game_args(p, {(base / "pmd.gba").string(), (base / "gba_bios.bin").string()},
+                                    {"--fullscreen"});
         bool all_abs = true;
-        for (std::size_t i = 1; i < args.size(); i += 2)
-            if (i < args.size() - 1 && args[i][0] != '/') all_abs = false;
+        for (std::size_t i = 1; i + 2 < args.size(); i += 2)
+            if (!fs::path(args[i]).is_absolute()) all_abs = false;
         check(all_abs, "every path argument is absolute");
-        check(!args.empty() && args.back() == p.work_src() + "/game.toml", "game.toml comes last");
+        check(!args.empty() && fs::path(args.back()) == fs::path(p.work_src()) / "game.toml",
+              "game.toml comes last");
         check(args.size() >= 2 && args[args.size() - 2] == "--fullscreen", "passes extra arguments through");
-        check(args[5] == p.data_root + "/saves/pmd_red_rescue_team.sav", "saves live in the data directory");
+        check(fs::path(args[5]) == fs::path(p.data_root) / "saves" / "pmd_red_rescue_team.sav",
+              "saves live in the data directory");
     }
 
     fs::remove_all(tmp);

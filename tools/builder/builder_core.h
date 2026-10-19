@@ -39,6 +39,7 @@ const GameSpec& game_spec();
 struct Paths {
     std::string src_root;   // shipped sources, read-only
     std::string data_root;  // per-user and writable; ~/.var/app/<id>/data/... in a Flatpak
+    std::string toolchain;  // bundled compiler (Windows zip); empty when the host provides one
 
     std::string work_src() const;
     std::string game_binary() const;
@@ -48,6 +49,11 @@ struct Paths {
 };
 
 Paths default_paths(const char* argv0);
+
+// Puts the bundled toolchain and SDL2 first on PATH. Done once at startup, so
+// both the build and the game it execs (whose self-heal tier compiles with the
+// same gcc, and which loads SDL2.dll) see them.
+void use_bundled_toolchain(const Paths& p);
 
 struct Assets {
     std::string rom;

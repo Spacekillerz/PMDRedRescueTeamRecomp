@@ -1,7 +1,7 @@
 name: Release
 
-# A v* tag publishes a GitHub release; a manual run only uploads the bundle as
-# a workflow artifact, to test packaging without releasing.
+# A v* tag publishes a GitHub release; a manual run only uploads the bundles as
+# workflow artifacts, to test packaging without releasing.
 on:
   push:
     tags: ['v*']
@@ -37,20 +37,68 @@ jobs:
           flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           scripts/package_flatpak.sh
 
-      - name: Name and checksum
-        id: dist
+      - name: Name
         run: |
           version="${GITHUB_REF_NAME}"
           [ "${GITHUB_REF_TYPE}" = tag ] || version="dev-${GITHUB_SHA::7}"
-          name="PMDRedRescueTeamRecomp-linux-x86_64-${version}.flatpak"
           mkdir -p dist
-          cp flatpak-build/PMDRedRescueTeamRecomp.flatpak "dist/${name}"
-          (cd dist && sha256sum "${name}" > SHA256SUMS.txt)
-          cat dist/SHA256SUMS.txt
+          cp flatpak-build/PMDRedRescueTeamRecomp.flatpak "dist/PMDRedRescueTeamRecomp-linux-x86_64-${version}.flatpak"
 
       - uses: actions/upload-artifact@v4
         with:
           name: flatpak
+          path: dist/
+
+  windows:
+    name: Windows zip
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Apply gbarecomp patches
+        run: scripts/apply_patches.sh
+
+      - name: Build the zip
+        run: scripts/package_windows.sh
+
+      - name: Name
+        run: |
+          version="${GITHUB_REF_NAME}"
+          [ "${GITHUB_REF_TYPE}" = tag ] || version="dev-${GITHUB_SHA::7}"
+          mkdir -p dist
+          cp windows-build/PMDRedRescueTeamRecomp-windows-x64.zip "dist/PMDRedRescueTeamRecomp-windows-x64-${version}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/
+
+  publish:
+    name: Publish
+    needs: [flatpak, windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.flatpak *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
           path: dist/
 
       - uses: softprops/action-gh-release@v2
@@ -58,6 +106,7 @@ jobs:
         with:
           files: |
             dist/*.flatpak
+            dist/*.zip
             dist/SHA256SUMS.txt
           body_path: packaging/RELEASE_NOTES.md
           prerelease: ${{ contains(github.ref_name, '-') }}

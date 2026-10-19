@@ -15,6 +15,8 @@
 #include "asset_scan.h"
 #include "builder_core.h"
 
+// main() stays ours: no SDL2main on Windows.
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -31,7 +33,12 @@
 #include <thread>
 #include <vector>
 
+#if defined(_WIN32)
+#include <direct.h>
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
@@ -43,25 +50,66 @@ using namespace pmd::builder;
 
 namespace {
 
-// Replaces the process so Steam keeps tracking the same pid.
+#if defined(_WIN32)
+// _spawnv joins argv with spaces and quotes nothing, so each argument is quoted
+// the way the C runtime parses it back: backslashes only matter before a quote.
+std::string win_quote(const std::string& arg) {
+    if (!arg.empty() && arg.find_first_of(" \t\"") == std::string::npos) return arg;
+    std::string out = "\"";
+    std::size_t slashes = 0;
+    for (char c : arg) {
+        if (c == '\\') {
+            ++slashes;
+        } else if (c == '"') {
+            out.append(slashes * 2 + 1, '\\');
+            out += '"';
+            slashes = 0;
+            continue;
+        } else {
+            slashes = 0;
+        }
+        out += c;
+    }
+    out.append(slashes, '\\');
+    return out + "\"";
+}
+#endif
+
+// On POSIX this replaces the process so Steam keeps tracking the same pid.
+// Windows has no exec: spawn, wait, and hand the game's exit code back.
 [[noreturn]] void exec_game(const Paths& paths, const Assets& assets,
                             const std::vector<std::string>& passthrough) {
     const std::string binary = paths.game_binary();
     std::vector<std::string> args = game_args(paths, assets, passthrough);
+#if defined(_WIN32)
+    args.insert(args.begin(), binary);
+    for (auto& s : args) s = win_quote(s);
+    std::vector<char*> argv;
+    for (auto& s : args) argv.push_back(s.data());
+#else
     std::vector<char*> argv;
     argv.push_back(const_cast<char*>(binary.c_str()));
     for (auto& s : args) argv.push_back(s.data());
+#endif
     argv.push_back(nullptr);
 
     std::error_code ec;
     std::filesystem::create_directories(paths.saves_dir(), ec);
     // The runtime writes its coverage report and self-heal cache to the
     // working directory.
+#if defined(_WIN32)
+    if (_chdir(paths.data_root.c_str()) != 0)
+        std::fprintf(stderr, "chdir %s: %s\n", paths.data_root.c_str(), std::strerror(errno));
+    const intptr_t rc = _spawnv(_P_WAIT, binary.c_str(), argv.data());
+    if (rc < 0) std::fprintf(stderr, "could not start %s: %s\n", binary.c_str(), std::strerror(errno));
+    std::exit(rc < 0 ? 1 : static_cast<int>(rc));
+#else
     if (chdir(paths.data_root.c_str()) != 0)
         std::fprintf(stderr, "chdir %s: %s\n", paths.data_root.c_str(), std::strerror(errno));
     execv(binary.c_str(), argv.data());
     std::fprintf(stderr, "could not start %s: %s\n", binary.c_str(), std::strerror(errno));
     std::exit(1);
+#endif
 }
 
 struct Shared {
@@ -434,6 +482,7 @@ void print_progress_line(const Progress& pr) {
 
 int main(int argc, char** argv) {
     Paths paths = default_paths(argc > 0 ? argv[0] : nullptr);
+    use_bundled_toolchain(paths);
     Assets assets;
     bool headless = false, check_only = false, force = false, show_paths = false, scan_only = false;
     bool no_gui = false;
@@ -480,6 +529,7 @@ int main(int argc, char** argv) {
 
     if (show_paths) {
         std::printf("sources : %s\n", paths.src_root.c_str());
+        std::printf("tools   : %s\n", paths.toolchain.empty() ? "(host)" : paths.toolchain.c_str());
         std::printf("data    : %s\n", paths.data_root.c_str());
         std::printf("work    : %s\n", paths.work_src().c_str());
         std::printf("game    : %s\n", paths.game_binary().c_str());

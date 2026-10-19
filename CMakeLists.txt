@@ -78,7 +78,9 @@ if(NOT GBAGAME_BUILDER_ONLY)
         target_compile_definitions(${GAME_TARGET} PRIVATE PMD_RECOMP_UI)
     endif()
 
-    if(NOT MSVC)
+    if(MINGW)
+        target_link_options(${GAME_TARGET} PRIVATE -Wl,--stack,16777216)
+    elseif(NOT MSVC)
         target_link_options(${GAME_TARGET} PRIVATE -Wl,-z,stack-size=16777216)
     endif()
 

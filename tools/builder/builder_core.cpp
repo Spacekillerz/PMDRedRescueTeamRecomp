@@ -14,7 +14,11 @@
 #include <sstream>
 #include <system_error>
 
-#include <unistd.h>
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -24,7 +28,13 @@ namespace {
 const GameSpec kSpec = {
     /* title       */ "Pokemon Mystery Dungeon: Red Rescue Team",
     /* target      */ "PMDRedRescueTeamRecomp",
+#if defined(_WIN32)
+    // Short on purpose: the deepest object path is ~125 characters below the
+    // build directory, and MAX_PATH is 260 including C:\Users\<name>\AppData\Local.
+    /* data_dir    */ "PMDRed",
+#else
     /* data_dir    */ "PMDRedRescueTeamRecomp",
+#endif
     /* rom_sha1    */ "9f4cfc5b5f4859d17169a485462e977c7aac2b89",
     /* bios_sha1   */ "300c20df6731a33952ded8c436f7f186d25d3492",
     /* game_toml   */ "game.toml",
@@ -64,21 +74,44 @@ std::string trim(const std::string& s) {
     return s.substr(b, s.find_last_not_of(" \t\r\n") - b + 1);
 }
 
+// Quotes one argument for the shell popen() and system() hand commands to.
 std::string q(const std::string& s) {
+#if defined(_WIN32)
+    // Windows paths cannot contain '"', and cmd.exe has no other quoting.
+    return "\"" + s + "\"";
+#else
     std::string out = "'";
     for (char c : s) {
         if (c == '\'') out += "'\\''";
         else out += c;
     }
     return out + "'";
+#endif
+}
+
+// cmd.exe /c strips the first and last quote of the whole line when it starts
+// with one, which breaks `"C:\a b\x.exe" --flag "C:\c d"`; wrapping the line in
+// one more pair of quotes is the documented way through.
+std::string shell_line(const std::string& cmd) {
+#if defined(_WIN32)
+    return "\"" + cmd + "\"";
+#else
+    return cmd;
+#endif
 }
 
 // argv[0] is a bare name when started from PATH, which is how Flatpak, desktop
-// entries and Steam all start it, so ask the kernel instead.
+// entries and Steam all start it, so ask the OS instead.
 std::string exe_dir(const char* argv0) {
     std::error_code ec;
+#if defined(_WIN32)
+    wchar_t buf[MAX_PATH];
+    const DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    if (n > 0 && n < MAX_PATH) return fs::path(std::wstring(buf, n)).parent_path().string();
+#else
     fs::path self = fs::read_symlink("/proc/self/exe", ec);
     if (!ec && !self.empty()) return self.parent_path().string();
+#endif
     fs::path p = argv0 ? fs::path(argv0) : fs::path();
     if (!p.empty() && p.has_parent_path()) {
         fs::path abs = fs::absolute(p, ec);
@@ -89,8 +122,13 @@ std::string exe_dir(const char* argv0) {
 
 // Inside a Flatpak, XDG_DATA_HOME already points at ~/.var/app/<id>/data.
 std::string user_data_base() {
+#if defined(_WIN32)
+    if (const char* v = std::getenv("LOCALAPPDATA"); v && v[0]) return v;
+    if (const char* v = std::getenv("USERPROFILE"); v && v[0]) return std::string(v) + "\\AppData\\Local";
+#else
     if (const char* v = std::getenv("XDG_DATA_HOME"); v && v[0]) return v;
     if (const char* v = std::getenv("HOME"); v && v[0]) return std::string(v) + "/.local/share";
+#endif
     return ".";
 }
 
@@ -106,7 +144,11 @@ struct Log {
 // Ninja sees a pipe, not a tty, so it prints one line per edge.
 int run(const std::string& cmd, Log& log, const std::function<void(const std::string&)>& on_line) {
     log.line("$ " + cmd);
-    FILE* pipe = popen((cmd + " 2>&1").c_str(), "r");
+#if defined(_WIN32)
+    FILE* pipe = _popen(shell_line(cmd + " 2>&1").c_str(), "r");
+#else
+    FILE* pipe = popen(shell_line(cmd + " 2>&1").c_str(), "r");
+#endif
     if (!pipe) {
         log.line("!! could not start the command");
         return -1;
@@ -119,13 +161,21 @@ int run(const std::string& cmd, Log& log, const std::function<void(const std::st
         log.line(buf);
         if (on_line) on_line(buf);
     }
+#if defined(_WIN32)
+    const int rc = _pclose(pipe);
+#else
     const int rc = pclose(pipe);
+#endif
     log.line("-- exit " + std::to_string(rc));
     return rc;
 }
 
 int quiet_system(const std::string& cmd) {
+#if defined(_WIN32)
+    return std::system(shell_line(cmd + " > nul 2>&1").c_str());
+#else
     return std::system((cmd + " > /dev/null 2>&1").c_str());
+#endif
 }
 
 bool have_ninja() {
@@ -141,7 +191,11 @@ const GameSpec& game_spec() { return kSpec; }
 
 std::string Paths::work_src() const { return (fs::path(data_root) / "src").string(); }
 std::string Paths::game_binary() const {
+#if defined(_WIN32)
+    return (fs::path(work_src()) / "build" / (std::string(kSpec.target) + ".exe")).string();
+#else
     return (fs::path(work_src()) / "build" / kSpec.target).string();
+#endif
 }
 std::string Paths::saves_dir() const { return (fs::path(data_root) / "saves").string(); }
 std::string Paths::stamp_file() const { return (fs::path(data_root) / "build.stamp").string(); }
@@ -150,6 +204,11 @@ std::string Paths::log_file() const { return (fs::path(data_root) / "build.log")
 Paths default_paths(const char* argv0) {
     Paths p;
     p.src_root = exe_dir(argv0);
+    {
+        std::error_code ec;
+        const fs::path tc = fs::path(p.src_root) / "toolchain";
+        if (fs::exists(tc / "w64devkit" / "bin", ec)) p.toolchain = tc.string();
+    }
     if (const char* over = std::getenv("PMD_BUILDER_SOURCES"); over && over[0]) {
         p.src_root = over;
     } else {
@@ -173,6 +232,38 @@ Paths default_paths(const char* argv0) {
     p.data_root = (fs::path(user_data_base()) / kSpec.data_dir).string();
     if (const char* d = std::getenv("PMD_BUILDER_DATA"); d && d[0]) p.data_root = d;
     return p;
+}
+
+namespace {
+
+fs::path sdl2_prefix(const Paths& p) {
+    return fs::path(p.toolchain) / "SDL2" / "x86_64-w64-mingw32";
+}
+
+}  // namespace
+
+void use_bundled_toolchain(const Paths& p) {
+    if (p.toolchain.empty()) return;
+    const fs::path tc = p.toolchain;
+#if defined(_WIN32)
+    const char sep = ';';
+#else
+    const char sep = ':';
+#endif
+    const char* old = std::getenv("PATH");
+    const std::string path = (tc / "w64devkit" / "bin").string() + sep +
+                             (sdl2_prefix(p) / "bin").string() +
+                             (old && old[0] ? std::string(1, sep) + old : std::string());
+#if defined(_WIN32)
+    SetEnvironmentVariableA("PATH", path.c_str());
+    _putenv_s("PATH", path.c_str());
+    _putenv_s("CC", "gcc");
+    _putenv_s("CXX", "g++");
+#else
+    setenv("PATH", path.c_str(), 1);
+    setenv("CC", "gcc", 1);
+    setenv("CXX", "g++", 1);
+#endif
 }
 
 bool verify_sha1(const std::string& path, const char* want_hex, std::string& actual_hex) {
@@ -214,14 +305,26 @@ Preflight probe_toolchain(const Paths& p) {
                        log, nullptr);
     fs::remove(probe, ec);
     fs::remove(out, ec);
+#if defined(_WIN32)
+    // The zip carries its own compiler; nothing to install, only to restore.
+    const char* kNoCompiler = "The bundled compiler does not work. Extract the release zip again, "
+                              "keeping the toolchain folder next to the program.";
+    const char* kCompilerRemedy = "";
+    const char* kCMakeRemedy = "";
+#else
+    const char* kNoCompiler = "No working C++ compiler found.";
+    const char* kCompilerRemedy =
+        "sudo dnf install gcc-c++ cmake ninja-build   (or: sudo apt install build-essential cmake ninja-build)";
+    const char* kCMakeRemedy = "sudo dnf install cmake ninja-build   (or: sudo apt install cmake ninja-build)";
+#endif
     if (rc != 0) {
-        r.error = "No working C++ compiler found.";
-        r.remedy = "sudo dnf install gcc-c++ cmake ninja-build   (or: sudo apt install build-essential cmake ninja-build)";
+        r.error = kNoCompiler;
+        r.remedy = kCompilerRemedy;
         return r;
     }
     if (quiet_system("cmake --version") != 0) {
         r.error = "CMake is not installed.";
-        r.remedy = "sudo dnf install cmake ninja-build   (or: sudo apt install cmake ninja-build)";
+        r.remedy = kCMakeRemedy;
         return r;
     }
     r.ok = true;
@@ -361,7 +464,9 @@ bool copy_sources(const Paths& p, Reporter& rep, Log& log, std::string& err) {
 std::string find_recompiler(const Paths& p) {
     std::error_code ec;
     for (const fs::path cand : {fs::path(p.src_root) / "bin" / "gba_recompile",
-                                fs::path(p.work_src()) / "gbarecomp" / "build" / "gba_recompile"}) {
+                                fs::path(p.src_root) / "bin" / "gba_recompile.exe",
+                                fs::path(p.work_src()) / "gbarecomp" / "build" / "gba_recompile",
+                                fs::path(p.work_src()) / "gbarecomp" / "build" / "gba_recompile.exe"}) {
         if (fs::exists(cand, ec)) return cand.string();
     }
     return {};
@@ -440,9 +545,16 @@ bool build(const Paths& p, const Assets& a, const ProgressFn& on_progress, std::
 
     rep.phase(Step::Configure, 0.14f, 0.16f, "Configuring the build");
     const std::string bdir = (work / "build").string();
+    std::string platform_flags;
+    if (!p.toolchain.empty()) {
+        // SDL2 comes from the zip; -static folds libstdc++, libgcc and
+        // winpthread into the game so only SDL2.dll travels beside it.
+        platform_flags = " -DCMAKE_PREFIX_PATH=" + q(sdl2_prefix(p).string()) +
+                         " -DCMAKE_EXE_LINKER_FLAGS=-static";
+    }
     if (run("cmake -B " + q(bdir) + " -S " + q(work.string()) + generator_flag() +
-                " -DCMAKE_BUILD_TYPE=Release -DGBAGAME_RECOMP_UI=ON -DGBAGAME_BUILDER=OFF", log,
-            nullptr) != 0) {
+                " -DCMAKE_BUILD_TYPE=Release -DGBAGAME_RECOMP_UI=ON -DGBAGAME_BUILDER=OFF" +
+                platform_flags, log, nullptr) != 0) {
         err = "Could not configure the build.";
         return false;
     }
@@ -463,6 +575,12 @@ bool build(const Paths& p, const Assets& a, const ProgressFn& on_progress, std::
     if (!fs::exists(p.game_binary(), ec)) {
         err = "The build reported success but produced no game binary.";
         return false;
+    }
+    if (!p.toolchain.empty()) {
+        const fs::path dll = sdl2_prefix(p) / "bin" / "SDL2.dll";
+        if (fs::exists(dll, ec))
+            fs::copy_file(dll, fs::path(p.game_binary()).parent_path() / "SDL2.dll",
+                          fs::copy_options::update_existing, ec);
     }
 
     stamp_write(p, a);
