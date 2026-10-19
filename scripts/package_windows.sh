@@ -43,6 +43,18 @@ rm -rf "$SDL_TMP"
 [[ -x "$TC/w64devkit/bin/g++.exe" && -x "$TC/w64devkit/bin/cmake.exe" && -x "$TC/w64devkit/bin/ninja.exe" ]] ||
     { echo "w64devkit layout changed" >&2; exit 1; }
 
+# The player only compiles 64-bit C and C++. Trimmed before the build below, so
+# a green build proves what remains is enough. ~300 MB of 740 MB unpacked.
+W="$TC/w64devkit"
+GCCVER="$(ls "$W/lib/gcc/x86_64-w64-mingw32")"
+rm -rf "$W/lib32" "$W/lib/gcc/x86_64-w64-mingw32/$GCCVER/32" \
+       "$W/share/vim" "$W/share/nsis" \
+       "$W/libexec/gcc/x86_64-w64-mingw32/$GCCVER/f951.exe"
+rm -f "$W"/bin/{ctest,cpack,ccmake,gdb,gdbserver}.exe \
+      "$W"/bin/*gfortran*.exe "$W"/bin/i686-w64-mingw32-* \
+      "$W"/bin/{vim,gvim,vimdiff,vimtutor,view}.bat \
+      "$W"/lib/gcc/x86_64-w64-mingw32/"$GCCVER"/libgfortran*
+
 # gbarecomp fetches toml++ at configure time; the player's build has no reason
 # to need the network, so the pinned header ships with the sources.
 mkdir -p "$ROOT/gbarecomp/third_party/tomlpp"
