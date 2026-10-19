@@ -24,6 +24,15 @@ the compiler.
 On a Steam Deck, add it to Steam (Games > Add a Non-Steam Game) to play from
 Gaming Mode with the controller.
 
+### Windows
+
+Download `PMDRedRescueTeamRecomp-windows-x64-*.zip`, extract the whole folder
+(it carries its own compiler in `toolchain\`), and run
+`PMDRedRescueTeamBuilder.exe`. The program is not code-signed: if SmartScreen
+warns, choose *More info* then *Run anyway*. The ROM and BIOS are searched in
+`Emulation\roms\gba` and `Emulation\bios` (EmuDeck), Downloads, Documents and
+Desktop, or picked with *Choose file*. The first build takes a few minutes.
+
 | File      | SHA-1                                      |
 |-----------|--------------------------------------------|
 | ROM (USA) | `9f4cfc5b5f4859d17169a485462e977c7aac2b89` |

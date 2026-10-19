@@ -1,14 +1,14 @@
 # PMDRedRescueTeamRecomp
 
-*Pokemon Mystery Dungeon: Red Rescue Team* (GBA, USA) running natively on Linux
-and the Steam Deck: the game's machine code is statically recompiled into a native
-program with [gbarecomp], not emulated.
+*Pokemon Mystery Dungeon: Red Rescue Team* (GBA, USA) running natively on Linux,
+the Steam Deck and Windows: the game's machine code is statically recompiled
+into a native program with [gbarecomp], not emulated.
 
 > **Preview.** The game is playable, but not every code path is recompiled ahead
 > of time yet. Code the recompiler has not reached runs through a built-in
 > interpreter the first time, is recompiled on the fly and cached, so the game
-> gets faster the more it is played. Steam Deck support is designed for but not
-> yet validated on hardware.
+> gets faster the more it is played. Steam Deck and Windows support are designed
+> for but not yet validated on that hardware.
 
 **No game data is included or distributed.** You supply your own dump of the
 cartridge and of the GBA BIOS; the game is compiled from them on your machine.
@@ -25,7 +25,7 @@ cartridge and of the GBA BIOS; the game is compiled from them on your machine.
 Any other revision or region is refused: the recompiled code is tied to this
 exact ROM.
 
-### Install
+### Install (Linux, Steam Deck)
 
 Download `PMDRedRescueTeamRecomp-linux-x86_64-<version>.flatpak` from
 [Releases](../../releases) and install it. On a Steam Deck, do this in Desktop
@@ -50,6 +50,18 @@ compiler that builds the game on your machine.
    PC, 5 to 8 minutes on a Steam Deck.
 
 Every later launch starts the game directly.
+
+### Windows
+
+Download `PMDRedRescueTeamRecomp-windows-x64-<version>.zip` from
+[Releases](../../releases) and extract the whole folder anywhere writable: it
+carries its own compiler (w64devkit) in `toolchain\`, so nothing needs to be
+installed. Run `PMDRedRescueTeamBuilder.exe`; the program is not code-signed, so
+SmartScreen may ask you to confirm (*More info* > *Run anyway*).
+
+The ROM and BIOS are found in `Emulation\roms\gba` and `Emulation\bios` on any
+drive (EmuDeck), in Downloads, Documents or Desktop, or picked with *Choose
+file*. Builds, saves and states live in `%LOCALAPPDATA%\PMDRed`.
 
 ### Steam Deck
 
@@ -165,9 +177,11 @@ cmake --build build-builder && build-builder/test_builder_core
 scripts/package_flatpak.sh   # flatpak-build/PMDRedRescueTeamRecomp.flatpak
 ```
 
-CI builds and tests the builder on every push. Pushing a `v*` tag builds the
-Flatpak in the Flathub SDK container and publishes it with its SHA-256; a tag
-with a `-` (`v0.1.0-beta.1`) is published as a pre-release.
+CI builds and tests the builder on every push, on Linux and on Windows with the
+toolchain the zip ships. Pushing a `v*` tag builds the Flatpak (Flathub SDK
+container) and the Windows zip (`scripts/package_windows.sh`: w64devkit 2.10.0
+trimmed to 64-bit C/C++, SDL2 2.32.10, both pinned by SHA-256) and publishes them
+with one `SHA256SUMS.txt`; a tag with a `-` (`v0.1.0-beta.1`) is a pre-release.
 
 ## License and credits
 
