@@ -39,7 +39,7 @@ const GameSpec kSpec = {
     /* bios_sha1   */ "300c20df6731a33952ded8c436f7f186d25d3492",
     /* game_toml   */ "game.toml",
     /* save_name   */ "pmd_red_rescue_team.sav",
-    /* app_version */ "1",
+    /* app_version */ "2",
 };
 
 // Generated C (~235 MB), the build tree and the linker's peak.
@@ -422,8 +422,26 @@ struct Reporter {
     void emit() const { if (fn) fn(cur); }
 };
 
+bool same_contents(const fs::path& a, const fs::path& b) {
+    std::error_code ec;
+    const auto size = fs::file_size(a, ec);
+    if (ec || fs::file_size(b, ec) != size || ec) return false;
+    std::ifstream fa(a, std::ios::binary), fb(b, std::ios::binary);
+    if (!fa || !fb) return false;
+    char ba[1 << 16], bb[1 << 16];
+    while (fa && fb) {
+        fa.read(ba, sizeof ba);
+        fb.read(bb, sizeof bb);
+        if (fa.gcount() != fb.gcount() ||
+            !std::equal(ba, ba + fa.gcount(), bb)) return false;
+    }
+    return true;
+}
+
 // Copies over the top rather than wiping: the build tree lives inside the copy,
-// and keeping it makes a post-update rebuild incremental.
+// and keeping it makes a post-update rebuild incremental. Files are compared by
+// content, not date: Flatpak stamps everything under /app with the epoch, so a
+// newer bundled source never looks newer than the copy.
 bool copy_sources(const Paths& p, Reporter& rep, Log& log, std::string& err) {
     std::error_code ec;
     const fs::path from = p.src_root, to = p.work_src();
@@ -447,7 +465,8 @@ bool copy_sources(const Paths& p, Reporter& rep, Log& log, std::string& err) {
 
             const fs::path dst = to / rel;
             fs::create_directories(dst.parent_path(), ec);
-            fs::copy_file(src, dst, fs::copy_options::update_existing, ec);
+            if (!same_contents(src, dst))
+                fs::copy_file(src, dst, fs::copy_options::overwrite_existing, ec);
             if (ec) {
                 log.line("!! copy failed: " + src.string() + " -> " + ec.message());
                 ec.clear();
