@@ -4,15 +4,17 @@ into a native Linux game, on your machine, on first launch.
 
 ### What's new
 
-- **Fixed a crash when entering a dungeon.** The compiler used by the builder
-  (Linux Flatpak and Windows) turned the game's long loops into ever deeper
-  function calls until the program ran out of stack. Installing this version
-  recompiles the game once, as long as a first launch takes.
+- **Widescreen dungeons.** With `--widescreen`, dungeon floors now fill the
+  extra width up to 16:9: terrain, Pokémon, their status icons and floor items
+  are drawn in the side margins, and slide out at the screen edges instead of
+  vanishing. Towns, menus and cutscenes keep the original 240×160 picture
+  between black bars. Dark dungeon floors are not tested yet.
+- Installing this version recompiles the game once, as long as a first launch
+  takes.
 
+Since beta.2: a fix for a crash when entering a dungeon (GCC-built copies).
 Since beta.1: an experimental Windows builder (not yet tested on a real Windows
-machine), and the launch options `--fullscreen` and `--widescreen` (adaptive
-view up to 16:9; every scene is still shown at its original 240×160 between
-black bars for now).
+machine), and the launch options `--fullscreen` and `--widescreen`.
 
 ### Install (Linux desktop or Steam Deck in Desktop Mode)
 

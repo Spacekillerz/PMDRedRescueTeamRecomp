@@ -94,3 +94,36 @@ addr = 0x03000000
 mode = "thumb"
 name = "SoundMainRAM"
 note = "m4a PCM mixer, called every frame"
+
+# --- Widescreen --------------------------------------------------------------
+
+# AddAxSprite (src/sprite.c) drops every Pokemon sprite part at x >= 240;
+# src/dungeon_widescreen.cpp takes over the calls that land in the right margin.
+[[mod_function_hook]]
+addr = 0x08004EA8
+mode = "thumb"
+note = "AddAxSprite: dungeon widescreen margin sprites"
+
+# DrawStatusSprite (src/dungeon_pokemon_sprites.c) drops status icons at x >= 240.
+[[mod_function_hook]]
+addr = 0x0800F364
+mode = "thumb"
+note = "DrawStatusSprite: dungeon widescreen margin status icons"
+
+# Wild Pokemon and floor items only show within 6 tiles of the leader; the
+# draw calls see 7 so they slide out of the margins instead of vanishing.
+[[mod_function_hook]]
+addr = 0x08042768
+mode = "thumb"
+note = "sub_8042768, from the Pokemon renderer only: 7-tile range"
+
+[[mod_function_hook]]
+addr = 0x08045888
+mode = "thumb"
+note = "ShouldDisplayEntity, from the floor item renderer only: 7-tile range"
+
+# The floor item renderer drops icons left of x = -32, inside the left margin.
+[[mod_function_hook]]
+addr = 0x080462AC
+mode = "thumb"
+note = "sub_80462AC: floor item icons in the left margin"

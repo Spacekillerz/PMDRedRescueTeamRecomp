@@ -40,7 +40,7 @@ if(NOT GBAGAME_BUILDER_ONLY)
     endif()
 
     set(GAME_TARGET PMDRedRescueTeamRecomp)
-    add_executable(${GAME_TARGET} src/main.cpp ${GAME_GENERATED_SOURCES})
+    add_executable(${GAME_TARGET} src/main.cpp src/dungeon_widescreen.cpp ${GAME_GENERATED_SOURCES})
 
     # The recompiled shards are huge machine-written translation units: -O1 keeps
     # compile time and memory bounded. Blocks chain through `fn(); return;`, which

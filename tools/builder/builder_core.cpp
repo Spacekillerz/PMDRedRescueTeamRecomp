@@ -39,7 +39,7 @@ const GameSpec kSpec = {
     /* bios_sha1   */ "300c20df6731a33952ded8c436f7f186d25d3492",
     /* game_toml   */ "game.toml",
     /* save_name   */ "pmd_red_rescue_team.sav",
-    /* app_version */ "3",
+    /* app_version */ "7",
 };
 
 // Generated C (~235 MB), the build tree and the linker's peak.

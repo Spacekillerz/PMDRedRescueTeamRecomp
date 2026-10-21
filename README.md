@@ -91,7 +91,7 @@ end of that line.
 | Option         | Effect                                                                 |
 |----------------|------------------------------------------------------------------------|
 | `--fullscreen` | Start in fullscreen.                                                   |
-| `--widescreen` | Adaptive widescreen: the view follows the screen's aspect, up to 16:9. Every scene still shows the original 240×160 picture between black bars for now. |
+| `--widescreen` | Adaptive widescreen: the view follows the screen's aspect, up to 16:9. Dungeon floors fill the extra width (terrain, Pokémon, status icons, items); every other scene shows the original 240×160 picture between black bars. |
 
 ### Controls
 

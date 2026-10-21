@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "gba_ppu.h"
+#include "dungeon_widescreen.h"
 #include "runtime.h"
 
 #if defined(PMD_RECOMP_UI)
@@ -16,12 +16,6 @@ constexpr const char* kPmdRedUsaSha1 = "9f4cfc5b5f4859d17169a485462e977c7aac2b89
 
 // 16:9 at the GBA's 160 lines; a 16:10 screen such as the Steam Deck's gets 256.
 constexpr std::uint16_t kMaxWidescreenWidth = 284;
-
-// No scene draws authentic content past the native 240 columns yet: the margins
-// would show the wrapped 256 px BG ring, so they stay black.
-void pillarbox_every_scene(const gbarecomp::ExtendedViewFrameInfo*) {
-    gba::g_ws_pillarbox = 1;
-}
 
 }  // namespace
 
@@ -48,7 +42,7 @@ int main(int argc, char** argv) {
     opts.max_view_width = kMaxWidescreenWidth;
     opts.resize_driven_view = true;
     opts.max_resize_view_width = kMaxWidescreenWidth;
-    opts.extended_view_frame = pillarbox_every_scene;
+    opts.extended_view_frame = pmd_widescreen::extended_view_frame;
 
     std::vector<std::string> args;
     for (int i = 0; i < argc; ++i) {
