@@ -43,12 +43,14 @@ if(NOT GBAGAME_BUILDER_ONLY)
     add_executable(${GAME_TARGET} src/main.cpp ${GAME_GENERATED_SOURCES})
 
     # The recompiled shards are huge machine-written translation units: -O1 keeps
-    # compile time and memory bounded.
+    # compile time and memory bounded. Blocks chain through `fn(); return;`, which
+    # must become a jump or a long guest loop overflows the host stack; GCC only
+    # enables sibling calls from -O2, hence the explicit flag.
     set(GAME_RECOMPILED_SOURCES ${GAME_GENERATED_SOURCES})
     list(FILTER GAME_RECOMPILED_SOURCES INCLUDE REGEX "/recompiled_[0-9]+\\.cpp$")
     if(GAME_RECOMPILED_SOURCES)
         set_source_files_properties(${GAME_RECOMPILED_SOURCES} PROPERTIES
-            COMPILE_OPTIONS "-O1;-g0;-fno-exceptions;-fno-rtti;-fno-strict-aliasing;-fno-math-errno")
+            COMPILE_OPTIONS "-O1;-foptimize-sibling-calls;-g0;-fno-exceptions;-fno-rtti;-fno-strict-aliasing;-fno-math-errno")
     endif()
 
     target_include_directories(${GAME_TARGET} PRIVATE

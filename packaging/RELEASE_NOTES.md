@@ -4,13 +4,15 @@ into a native Linux game, on your machine, on first launch.
 
 ### What's new
 
-- **Windows builder** (experimental, not yet tested on a real Windows machine).
-- **Launch options** `--fullscreen` and `--widescreen` (adaptive view that
-  follows the screen's aspect, up to 16:9; every scene is still shown at its
-  original 240×160 between black bars for now).
-- **Updates now reach the game**: the builder used to keep compiling the
-  previous version's sources after an update. Installing this version
-  recompiles the game once, in a few seconds.
+- **Fixed a crash when entering a dungeon.** The compiler used by the builder
+  (Linux Flatpak and Windows) turned the game's long loops into ever deeper
+  function calls until the program ran out of stack. Installing this version
+  recompiles the game once, as long as a first launch takes.
+
+Since beta.1: an experimental Windows builder (not yet tested on a real Windows
+machine), and the launch options `--fullscreen` and `--widescreen` (adaptive
+view up to 16:9; every scene is still shown at its original 240×160 between
+black bars for now).
 
 ### Install (Linux desktop or Steam Deck in Desktop Mode)
 
