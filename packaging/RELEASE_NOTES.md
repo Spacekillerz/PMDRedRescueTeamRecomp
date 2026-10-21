@@ -2,6 +2,16 @@
 legally dumped *Pokemon Mystery Dungeon: Red Rescue Team* (USA) ROM and GBA BIOS
 into a native Linux game, on your machine, on first launch.
 
+### What's new
+
+- **Windows builder** (experimental, not yet tested on a real Windows machine).
+- **Launch options** `--fullscreen` and `--widescreen` (adaptive view that
+  follows the screen's aspect, up to 16:9; every scene is still shown at its
+  original 240×160 between black bars for now).
+- **Updates now reach the game**: the builder used to keep compiling the
+  previous version's sources after an update. Installing this version
+  recompiles the game once, in a few seconds.
+
 ### Install (Linux desktop or Steam Deck in Desktop Mode)
 
 ```sh
@@ -23,6 +33,14 @@ the compiler.
 
 On a Steam Deck, add it to Steam (Games > Add a Non-Steam Game) to play from
 Gaming Mode with the controller.
+
+From a terminal, with the optional launch options:
+
+```sh
+flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp --fullscreen --widescreen
+```
+
+In Steam, append them to the end of the game's *Launch Options*.
 
 ### Windows
 
