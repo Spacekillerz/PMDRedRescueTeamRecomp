@@ -45,7 +45,14 @@ compiler that builds the game on your machine.
    - `~/Emulation/roms/gba/` and `~/Emulation/bios/` (EmuDeck's layout, also on an
      SD card);
    - or anywhere in `~/Downloads` or your home folder.
-2. Launch **PMD Red Rescue Team Recomp**. Both files show as *Verified*.
+2. Launch **PMD Red Rescue Team Recomp** from the applications menu, or from a
+   terminal:
+
+   ```sh
+   flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp
+   ```
+
+   Both files show as *Verified*.
 3. Press **Build and play**. The game compiles once: about 1 minute on a desktop
    PC, 5 to 8 minutes on a Steam Deck.
 
@@ -68,6 +75,23 @@ file*. Builds, saves and states live in `%LOCALAPPDATA%\PMDRed`.
 After installing in Desktop Mode, open Steam > Games > *Add a Non-Steam Game to
 My Library*, tick **PMD Red Rescue Team Recomp**, and add it. In Gaming Mode the
 first-launch screen works with the controller alone: press A on *Build and play*.
+
+### Launch options
+
+Add them after the launch command:
+
+```sh
+flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp --fullscreen --widescreen
+```
+
+In Steam, the game's *Properties* > *Launch Options* already hold the
+`run … io.github.roblittiere.PMDRedRescueTeamRecomp` part: add the options at the
+end of that line.
+
+| Option         | Effect                                                                 |
+|----------------|------------------------------------------------------------------------|
+| `--fullscreen` | Start in fullscreen.                                                   |
+| `--widescreen` | Adaptive widescreen: the view follows the screen's aspect, up to 16:9. Every scene still shows the original 240×160 picture between black bars for now. |
 
 ### Controls
 
