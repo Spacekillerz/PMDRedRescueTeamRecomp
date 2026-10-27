@@ -88,6 +88,17 @@ In Steam, the game's *Properties* > *Launch Options* already hold the
 `run … io.github.roblittiere.PMDRedRescueTeamRecomp` part: add the options at the
 end of that line.
 
+On Windows, the builder hands them on to the game. From PowerShell in the
+extracted folder:
+
+```powershell
+.\PMDRedRescueTeamBuilder.exe --fullscreen --widescreen
+```
+
+Or create a shortcut to `PMDRedRescueTeamBuilder.exe` and, in its *Properties*,
+add the options to the end of *Target*, after the closing quote. For a non-Steam
+game in Steam, put them in *Launch Options*.
+
 | Option         | Effect                                                                 |
 |----------------|------------------------------------------------------------------------|
 | `--fullscreen` | Start in fullscreen.                                                   |

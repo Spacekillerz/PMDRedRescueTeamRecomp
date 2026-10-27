@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <system_error>
+#include <vector>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -74,7 +75,8 @@ std::string trim(const std::string& s) {
     return s.substr(b, s.find_last_not_of(" \t\r\n") - b + 1);
 }
 
-// Quotes one argument for the shell popen() and system() hand commands to.
+// Quotes one argument for the shell popen() and system() hand commands to, or
+// for the CRT's command-line parser on Windows.
 std::string q(const std::string& s) {
 #if defined(_WIN32)
     // Windows paths cannot contain '"', and cmd.exe has no other quoting.
@@ -86,17 +88,6 @@ std::string q(const std::string& s) {
         else out += c;
     }
     return out + "'";
-#endif
-}
-
-// cmd.exe /c strips the first and last quote of the whole line when it starts
-// with one, which breaks `"C:\a b\x.exe" --flag "C:\c d"`; wrapping the line in
-// one more pair of quotes is the documented way through.
-std::string shell_line(const std::string& cmd) {
-#if defined(_WIN32)
-    return "\"" + cmd + "\"";
-#else
-    return cmd;
 #endif
 }
 
@@ -140,30 +131,82 @@ struct Log {
     }
 };
 
+#if defined(_WIN32)
+// The builder is a GUI-subsystem program (SDL2 links it with -mwindows), so
+// any console child, cmd.exe included, would open a console window of its
+// own. CREATE_NO_WINDOW gives the child a hidden console instead, which the
+// processes it starts (ninja, gcc) inherit; DETACHED_PROCESS would not, and
+// each of those would open a window again.
+bool start_hidden(const std::string& cmd, HANDLE out, PROCESS_INFORMATION& pi) {
+    SECURITY_ATTRIBUTES sa{sizeof(sa), nullptr, TRUE};
+    HANDLE in = CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa,
+                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = in;
+    si.hStdOutput = out;
+    si.hStdError = out;
+    std::vector<char> line(cmd.begin(), cmd.end());
+    line.push_back('\0');
+    const BOOL ok = CreateProcessA(nullptr, line.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW,
+                                   nullptr, nullptr, &si, &pi);
+    if (in != INVALID_HANDLE_VALUE) CloseHandle(in);
+    return ok != 0;
+}
+
+int wait_exit(PROCESS_INFORMATION& pi) {
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = 1;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return static_cast<int>(code);
+}
+#endif
+
 // stderr is folded in: compiler diagnostics and ninja progress both matter.
 // Ninja sees a pipe, not a tty, so it prints one line per edge.
 int run(const std::string& cmd, Log& log, const std::function<void(const std::string&)>& on_line) {
     log.line("$ " + cmd);
+    auto emit = [&](std::string l) {
+        while (!l.empty() && (l.back() == '\n' || l.back() == '\r')) l.pop_back();
+        log.line(l);
+        if (on_line) on_line(l);
+    };
 #if defined(_WIN32)
-    FILE* pipe = _popen(shell_line(cmd + " 2>&1").c_str(), "r");
+    SECURITY_ATTRIBUTES sa{sizeof(sa), nullptr, TRUE};
+    HANDLE rd = nullptr, wr = nullptr;
+    PROCESS_INFORMATION pi{};
+    if (!CreatePipe(&rd, &wr, &sa, 0) || !SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0) ||
+        !start_hidden(cmd, wr, pi)) {
+        if (rd) CloseHandle(rd);
+        if (wr) CloseHandle(wr);
+        log.line("!! could not start the command");
+        return -1;
+    }
+    // Once our copy is closed, ReadFile ends when the last child holding the
+    // write end exits.
+    CloseHandle(wr);
+    std::string pending;
+    char chunk[4096];
+    DWORD n = 0;
+    while (ReadFile(rd, chunk, sizeof(chunk), &n, nullptr) && n > 0) {
+        pending.append(chunk, n);
+        for (size_t nl; (nl = pending.find('\n')) != std::string::npos; pending.erase(0, nl + 1))
+            emit(pending.substr(0, nl));
+    }
+    if (!pending.empty()) emit(pending);
+    CloseHandle(rd);
+    const int rc = wait_exit(pi);
 #else
-    FILE* pipe = popen(shell_line(cmd + " 2>&1").c_str(), "r");
-#endif
+    FILE* pipe = popen((cmd + " 2>&1").c_str(), "r");
     if (!pipe) {
         log.line("!! could not start the command");
         return -1;
     }
-    std::string buf;
     char chunk[4096];
-    while (std::fgets(chunk, sizeof(chunk), pipe)) {
-        buf.assign(chunk);
-        while (!buf.empty() && (buf.back() == '\n' || buf.back() == '\r')) buf.pop_back();
-        log.line(buf);
-        if (on_line) on_line(buf);
-    }
-#if defined(_WIN32)
-    const int rc = _pclose(pipe);
-#else
+    while (std::fgets(chunk, sizeof(chunk), pipe)) emit(chunk);
     const int rc = pclose(pipe);
 #endif
     log.line("-- exit " + std::to_string(rc));
@@ -172,7 +215,13 @@ int run(const std::string& cmd, Log& log, const std::function<void(const std::st
 
 int quiet_system(const std::string& cmd) {
 #if defined(_WIN32)
-    return std::system(shell_line(cmd + " > nul 2>&1").c_str());
+    SECURITY_ATTRIBUTES sa{sizeof(sa), nullptr, TRUE};
+    HANDLE nul = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa,
+                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    PROCESS_INFORMATION pi{};
+    const bool started = start_hidden(cmd, nul, pi);
+    if (nul != INVALID_HANDLE_VALUE) CloseHandle(nul);
+    return started ? wait_exit(pi) : -1;
 #else
     return std::system((cmd + " > /dev/null 2>&1").c_str());
 #endif
