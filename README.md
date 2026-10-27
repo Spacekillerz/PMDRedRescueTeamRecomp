@@ -212,8 +212,8 @@ cmake --build build-builder && build-builder/test_builder_core
 scripts/package_flatpak.sh   # flatpak-build/PMDRedRescueTeamRecomp.flatpak
 ```
 
-CI builds and tests the builder on every push, on Linux and on Windows with the
-toolchain the zip ships. Pushing a `v*` tag builds the Flatpak (Flathub SDK
+CI builds and tests the builder on every push, on Linux in the Flatpak's SDK
+container and on Windows with the toolchain the zip ships. Pushing a `v*` tag builds the Flatpak (Flathub SDK
 container) and the Windows zip (`scripts/package_windows.sh`: w64devkit 2.10.0
 trimmed to 64-bit C/C++, SDL2 2.32.10, both pinned by SHA-256) and publishes them
 with one `SHA256SUMS.txt`; a tag with a `-` (`v0.1.0-beta.1`) is a pre-release.

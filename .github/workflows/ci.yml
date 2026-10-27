@@ -9,19 +9,21 @@ jobs:
   builder:
     name: Builder (no ROM)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The Flatpak's own SDK: it brings the compiler, CMake, Ninja and SDL2, so
+    # nothing comes from the Ubuntu mirrors, and the builder is checked against
+    # the toolchain players' builds use.
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build g++ libsdl2-dev libgl-dev libfreetype-dev libharfbuzz-dev
-
       - name: Apply gbarecomp patches
-        run: scripts/apply_patches.sh
+        run: |
+          git config --global --add safe.directory '*'
+          scripts/apply_patches.sh
 
       # BUILDER_ONLY is the property releases depend on: everything published
       # configures and links without any ROM present.
@@ -40,6 +42,7 @@ jobs:
   windows:
     name: Windows builder (shipped toolchain, no ROM)
     runs-on: windows-2022
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash
