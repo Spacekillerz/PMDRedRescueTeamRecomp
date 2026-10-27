@@ -42,7 +42,7 @@ Gaming Mode with the controller.
 From a terminal, with the optional launch options:
 
 ```sh
-flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp --fullscreen --widescreen
+flatpak run io.github.spacekillerz.PMDRedRescueTeamRecomp --fullscreen --widescreen
 ```
 
 In Steam, append them to the end of the game's *Launch Options*.

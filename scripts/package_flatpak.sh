@@ -12,7 +12,7 @@ source "$(dirname "$0")/common.sh"
 GENERATE_ONLY=0
 [[ "${1:-}" == "--generate-only" ]] && GENERATE_ONLY=1
 
-APP_ID="io.github.roblittiere.PMDRedRescueTeamRecomp"
+APP_ID="io.github.spacekillerz.PMDRedRescueTeamRecomp"
 NAME="PMD Red Rescue Team Recomp"
 SUMMARY="Builds Pokemon Mystery Dungeon: Red Rescue Team natively from your own ROM"
 BUNDLE="PMDRedRescueTeamRecomp.flatpak"

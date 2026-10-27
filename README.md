@@ -49,7 +49,7 @@ compiler that builds the game on your machine.
    terminal:
 
    ```sh
-   flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp
+   flatpak run io.github.spacekillerz.PMDRedRescueTeamRecomp
    ```
 
    Both files show as *Verified*.
@@ -81,11 +81,11 @@ first-launch screen works with the controller alone: press A on *Build and play*
 Add them after the launch command:
 
 ```sh
-flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp --fullscreen --widescreen
+flatpak run io.github.spacekillerz.PMDRedRescueTeamRecomp --fullscreen --widescreen
 ```
 
 In Steam, the game's *Properties* > *Launch Options* already hold the
-`run … io.github.roblittiere.PMDRedRescueTeamRecomp` part: add the options at the
+`run … io.github.spacekillerz.PMDRedRescueTeamRecomp` part: add the options at the
 end of that line.
 
 On Windows, the builder hands them on to the game. From PowerShell in the
@@ -126,19 +126,19 @@ shortcuts follow the printed key.
 ### Where things live
 
 Everything the app writes stays in
-`~/.var/app/io.github.roblittiere.PMDRedRescueTeamRecomp/data/PMDRedRescueTeamRecomp/`:
+`~/.var/app/io.github.spacekillerz.PMDRedRescueTeamRecomp/data/PMDRedRescueTeamRecomp/`:
 the compiled game (`src/`), your saves and save states (`saves/`), and the build
 log (`build.log`). Your ROM and BIOS are only read, never copied or modified.
 
 - **Update:** install the new release; the next launch recompiles once, usually
   in seconds.
-- **Uninstall:** `flatpak uninstall io.github.roblittiere.PMDRedRescueTeamRecomp`,
+- **Uninstall:** `flatpak uninstall io.github.spacekillerz.PMDRedRescueTeamRecomp`,
   then delete the folder above to remove saves too.
 
 ### Troubleshooting
 
 - **ROM or BIOS not found:** check it is the unzipped USA `.gba`, and run
-  `flatpak run io.github.roblittiere.PMDRedRescueTeamRecomp --scan` to see what
+  `flatpak run io.github.spacekillerz.PMDRedRescueTeamRecomp --scan` to see what
   the search finds.
 - **Choose file does nothing:** the file dialog is not available inside the
   Flatpak sandbox yet; move the files into one of the folders above.
@@ -176,7 +176,7 @@ Chunsoft; this is an unaffiliated, non-commercial project.
 Fedora: `sudo dnf install clang cmake ninja-build SDL2-devel ccache`
 
 ```sh
-git clone --recurse-submodules https://github.com/robLittiere/PMDRedRescueTeamRecomp
+git clone --recurse-submodules https://github.com/Spacekillerz/PMDRedRescueTeamRecomp
 scripts/bootstrap.sh       # once: apply patches, build the gba_recompile tool
 scripts/verify-inputs.sh   # check roms/pmd_red.gba and bios/gba_bios.bin
 scripts/regen.sh           # recompile BIOS + cartridge into C++
