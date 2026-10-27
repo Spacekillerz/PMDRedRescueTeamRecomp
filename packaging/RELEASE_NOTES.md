@@ -4,17 +4,18 @@ into a native Linux game, on your machine, on first launch.
 
 ### What's new
 
-- **Widescreen dungeons.** With `--widescreen`, dungeon floors now fill the
-  extra width up to 16:9: terrain, Pokémon, their status icons and floor items
-  are drawn in the side margins, and slide out at the screen edges instead of
-  vanishing. Towns, menus and cutscenes keep the original 240×160 picture
-  between black bars. Dark dungeon floors are not tested yet.
-- Installing this version recompiles the game once, as long as a first launch
-  takes.
+- **Windows: no more console windows during the build.** The first build used
+  to pop up a command prompt window for each step; it now runs in the
+  background, with its progress in the builder's window.
+- The Windows builder has been confirmed working on a real Windows machine.
+- The README and these notes show how to pass launch options on Windows.
+- Updating from beta.4 does not recompile the game.
 
+Since beta.3: widescreen dungeon floors (terrain, Pokémon, status icons and
+items drawn in the side margins with `--widescreen`).
 Since beta.2: a fix for a crash when entering a dungeon (GCC-built copies).
-Since beta.1: an experimental Windows builder (not yet tested on a real Windows
-machine), and the launch options `--fullscreen` and `--widescreen`.
+Since beta.1: the Windows builder, and the launch options `--fullscreen` and
+`--widescreen`.
 
 ### Install (Linux desktop or Steam Deck in Desktop Mode)
 
@@ -54,6 +55,10 @@ Download `PMDRedRescueTeamRecomp-windows-x64-*.zip`, extract the whole folder
 warns, choose *More info* then *Run anyway*. The ROM and BIOS are searched in
 `Emulation\roms\gba` and `Emulation\bios` (EmuDeck), Downloads, Documents and
 Desktop, or picked with *Choose file*. The first build takes a few minutes.
+
+Launch options go after the program name, from PowerShell in that folder
+(`.\PMDRedRescueTeamBuilder.exe --fullscreen --widescreen`), or at the end of a
+shortcut's *Target*, after the closing quote.
 
 | File      | SHA-1                                      |
 |-----------|--------------------------------------------|
